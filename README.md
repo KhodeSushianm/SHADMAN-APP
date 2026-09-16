@@ -1,99 +1,229 @@
 <div align="center">
 
-# 🎓 Shima Academy
+<img src="assets/shima-academy-mark.svg" alt="Shima Academy" width="760" />
+
+<br />
+
+# SHADMAN-APP
 
 ### پنل مدیریتی آکادمی شیما شادمان
 
-یک پنل دسکتاپ مینیمال و حرفه‌ای برای مدیریت دانش‌آموزان، برنامه‌های مطالعاتی، آزمون‌ها و یادداشت‌های مشاوره‌ای.
+**A calm, focused workspace for student counseling management.**
 
-<br>
+<br />
 
-![Electron](https://img.shields.io/badge/Electron-Desktop-47848F?style=for-the-badge&logo=electron&logoColor=white)
-![SQLite](https://img.shields.io/badge/SQLite-Local%20Database-003B57?style=for-the-badge&logo=sqlite&logoColor=white)
-![JavaScript](https://img.shields.io/badge/JavaScript-Vanilla-F7DF1E?style=for-the-badge&logo=javascript&logoColor=111)
+[![Electron](https://img.shields.io/badge/Electron-Desktop-47848F?style=flat-square&logo=electron&logoColor=white)](https://www.electronjs.org/)
+[![SQLite](https://img.shields.io/badge/SQLite-Local%20Data-003B57?style=flat-square&logo=sqlite&logoColor=white)](https://www.sqlite.org/)
+[![JavaScript](https://img.shields.io/badge/Vanilla-JavaScript-F7DF1E?style=flat-square&logo=javascript&logoColor=111)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
+[![UI](https://img.shields.io/badge/UI-Neutral%20Matte-777067?style=flat-square)](#-design-system)
 
 </div>
 
 ---
 
-## ✨ درباره پروژه
+## 🖋️ نگاه پروژه
 
-**Shima Academy** برای یک workflow واقعی مشاوره کنکوری طراحی شده است؛ اطلاعات داخل یک دیتابیس SQLite محلی نگهداری می‌شوند و رابط کاربری با رویکرد **Neutral Matte** ساخته شده است.
+**Shadman App** یک داشبورد دسکتاپ برای مدیریت فرایند مشاوره کنکوری است؛ طراحی شده تا اطلاعات مهم در یک فضای آرام، خوانا و بدون شلوغی در دسترس باشند.
 
-> هدف این پروژه: یک پنل سریع، تمیز و قابل استفاده برای مشاور؛ بدون داده‌های Mock و بدون شلوغی غیرضروری.
+> **کمتر، مرتب‌تر، کاربردی‌تر.**
+>
+> رابط کاربری با زبان بصری **Neutral Matte** ساخته شده و داده‌ها به‌صورت محلی در SQLite نگهداری می‌شوند.
 
-## 🧩 بخش‌های فعلی
+---
 
-| بخش | کاربرد |
-|---|---|
-| 📊 داشبورد | خلاصه وضعیت و میانگین تراز از داده واقعی |
-| 👥 دانش‌آموزان | ثبت، ویرایش، جستجو و حذف |
-| 📅 برنامه‌ها | ثبت و پیگیری برنامه‌های مطالعه |
-| 📈 آزمون‌ها | ثبت نتیجه و تراز آزمون |
-| 📝 یادداشت‌ها | ثبت یادداشت‌های مشاوره‌ای |
-| ⚙️ تنظیمات | مدیریت محل ذخیره دیتابیس |
+## ◈ What lives inside
 
-## 🗄️ ذخیره‌سازی واقعی
+<table>
+<tr>
+<td width="50%">
 
-دیتابیس با نام زیر ذخیره می‌شود:
+### 📊 Dashboard
+نمای کلی وضعیت، آمار و روند **میانگین تراز** بر اساس داده واقعی.
+
+</td>
+<td width="50%">
+
+### 👥 Students
+ثبت، ویرایش، جستجو، فیلتر و مدیریت اطلاعات دانش‌آموزان.
+
+</td>
+</tr>
+<tr>
+<td>
+
+### 📅 Study Plans
+برنامه‌ریزی مطالعه، مدت زمان و پیگیری وضعیت اجرا.
+
+</td>
+<td>
+
+### 📈 Exams
+ثبت نتایج آزمون و ذخیره تراز هر رکورد در دیتابیس.
+
+</td>
+</tr>
+<tr>
+<td>
+
+### 📝 Notes
+یادداشت‌های مشاوره‌ای مرتبط با هر دانش‌آموز.
+
+</td>
+<td>
+
+### ⚙️ Storage
+انتخاب پوشه دلخواه برای نگهداری فایل SQLite.
+
+</td>
+</tr>
+</table>
+
+---
+
+## 🎨 Design System
+
+### Neutral Matte
+
+یک زبان بصری خنثی و حرفه‌ای با تمرکز روی خوانایی:
+
+`Charcoal` · `Stone` · `Warm Gray` · `Cream`
+
+- ✦ بدون gradientهای تند و شلوغ
+- ✦ کنتراست کنترل‌شده
+- ✦ فرم‌های یکدست و مینیمال
+- ✦ hover و focus ظریف
+- ✦ dark / light mode
+- ✦ responsive برای نمایشگرهای کوچک
+- ✦ آیکون‌های Lucide
+- ✦ empty state به‌جای داده ساختگی
+
+---
+
+## 🗄️ Local-first Architecture
+
+اطلاعات اصلی در یک فایل واقعی SQLite ذخیره می‌شود:
 
 ```text
 shima-academy.sqlite
 ```
 
-در اولین اجرا می‌توانید پوشه ذخیره‌سازی را انتخاب کنید. اطلاعات بعدی مستقیماً در همان دیتابیس SQLite نگهداری می‌شوند.
+```text
+┌──────────────────────────────┐
+│       Shima Academy UI       │
+├──────────────────────────────┤
+│ Students · Plans · Exams     │
+│ Notes · Dashboard · Settings │
+├──────────────────────────────┤
+│          sql.js              │
+├──────────────────────────────┤
+│     shima-academy.sqlite     │
+└──────────────────────────────┘
+              │
+              ▼
+       Selected local folder
+```
 
-## 📁 ساختار پروژه
+در نسخه Electron، مشاور می‌تواند پوشه ذخیره‌سازی را انتخاب کند و دیتابیس همان‌جا قرار می‌گیرد.
+
+---
+
+## 🧱 Project Structure
 
 ```text
 SHADMAN-APP/
-├── index.html      # رابط کاربری و منطق پنل
-├── main.js         # Electron + مدیریت فایل SQLite
-├── preload.js      # پل امن بین UI و سیستم
-├── package.json    # تنظیمات پروژه Electron
-└── README.md       # مستندات
+│
+├── index.html
+│   └── UI + application logic
+│
+├── main.js
+│   └── Electron + filesystem bridge
+│
+├── preload.js
+│   └── secure IPC bridge
+│
+├── package.json
+│   └── Electron configuration
+│
+├── assets/
+│   ├── shima-academy-mark.svg
+│   └── screenshots/
+│
+└── README.md
 ```
 
-## 🚀 اجرا
+---
 
-پیش‌نیاز: **Node.js 18+**
+## 🚀 Run locally
+
+### 01 · Install
 
 ```bash
 npm install
+```
+
+### 02 · Launch
+
+```bash
 npm start
 ```
 
-## 🎨 طراحی
+### 03 · Choose storage
 
-- Neutral Matte UI
-- Dark / Light mode
-- Responsive layout
-- Sidebar navigation
-- Modal forms
-- Tables with search & filtering
-- Empty states
-- Lucide icons
-- Focus / hover states
-- Mobile navigation
+در اولین اجرا، پوشه‌ای را برای نگهداری دیتابیس انتخاب کنید.
 
-## 📊 داده‌های نمودار
+**Requirement:** Node.js 18+
 
-نمودار **میانگین تراز** از رکوردهای واقعی جدول `exams` محاسبه می‌شود و در صورت نبود داده، به‌جای اعداد ساختگی Empty State نمایش داده می‌شود.
+---
 
-## 🛠️ تکنولوژی‌ها
+## 📐 Data model
 
-- Electron
-- Vanilla JavaScript
-- SQLite / sql.js
-- HTML / CSS
-- Lucide Icons
+| Table | Purpose |
+|:---|:---|
+| `students` | اطلاعات پایه و وضعیت دانش‌آموز |
+| `plans` | برنامه‌های مطالعاتی |
+| `exams` | نتایج و تراز آزمون‌ها |
+| `notes` | یادداشت‌های مشاوره‌ای |
+
+### Real data only
+
+هیچ seed data یا عدد ساختگی برای داشبورد در نظر گرفته نشده است. اگر دیتابیس خالی باشد، پنل وضعیت خالی را نمایش می‌دهد.
+
+نمودار میانگین تراز نیز مستقیماً از رکوردهای `exams` محاسبه می‌شود.
+
+---
+
+## 🧭 Current scope
+
+```text
+[✓] Student management
+[✓] Study plans
+[✓] Exam records
+[✓] Counseling notes
+[✓] SQLite persistence
+[✓] Folder-based storage
+[✓] Dashboard analytics
+[✓] Dark / Light theme
+[✓] Responsive UI
+[ ] Future features — defined after advisor feedback
+```
+
+ساختار فعلی عمداً ساده نگه داشته شده تا امکانات بعدی بر اساس نیاز واقعی مشاور اضافه شوند.
+
+---
+
+## 🛠️ Built with
+
+**Electron** · **Vanilla JavaScript** · **sql.js / SQLite** · **HTML** · **CSS** · **Lucide Icons**
 
 ---
 
 <div align="center">
 
-### ساخته‌شده برای Shima Academy
+### Shima Academy
+**A focused workspace for better counseling workflows.**
 
-**SHADMAN-APP** · Management Dashboard
+<br />
+
+`SHADMAN-APP` · `Neutral Matte` · `Local-first`
 
 </div>
