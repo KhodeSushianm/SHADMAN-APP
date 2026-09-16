@@ -18,6 +18,7 @@ function writeConfig(){
   fs.mkdirSync(app.getPath('userData'), {recursive:true});
   fs.writeFileSync(configFile(), JSON.stringify({dbFolder}, null, 2), 'utf8');
 }
+
 function setupOfflineAssets(){
   session.defaultSession.webRequest.onBeforeRequest(
     {urls:['https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.13.0/*','https://unpkg.com/lucide@latest*']},
@@ -32,8 +33,55 @@ function setupOfflineAssets(){
     }
   );
 }
+
+function bootstrapRenderer(){
+  if(!mainWindow) return;
+  const sqlAsm = path.join(app.getAppPath(),'node_modules','sql.js','dist','sql-asm.js');
+  const sqlAsmUrl = pathToFileURL(sqlAsm).href;
+
+  mainWindow.webContents.on('dom-ready', async () => {
+    try {
+      const code = `(async()=>{
+        try {
+          if(typeof window.initSqlJs !== 'function'){
+            await new Promise((resolve,reject)=>{
+              const s=document.createElement('script');
+              s.src=${JSON.stringify(sqlAsmUrl)};
+              s.onload=resolve;
+              s.onerror=()=>reject(new Error('LOCAL_SQL_JS_LOAD_FAILED'));
+              document.head.appendChild(s);
+            });
+          }
+          if(!window.lucide) window.lucide={createIcons:function(){}};
+          const content=document.getElementById('content');
+          if(content && !content.innerHTML.trim() && typeof window.init==='function') await window.init();
+        }catch(e){
+          console.error('[Shima Academy bootstrap]',e);
+          const content=document.getElementById('content');
+          if(content && !content.innerHTML.trim()) content.innerHTML='<div style="padding:40px;font-family:sans-serif;color:#c59898">خطا در راه‌اندازی برنامه. لطفاً برنامه را دوباره باز کنید.</div>';
+        }
+      })()`;
+      await mainWindow.webContents.executeJavaScript(code, true);
+    } catch (e) {
+      console.error('[Shima Academy executeJavaScript]', e);
+    }
+  });
+}
+
 function createWindow(){
-  mainWindow = new BrowserWindow({width:1440,height:900,minWidth:1050,minHeight:700,backgroundColor:'#111315',webPreferences:{preload:path.join(__dirname,'preload.js'),contextIsolation:true,nodeIntegration:false}});
+  mainWindow = new BrowserWindow({
+    width:1440,
+    height:900,
+    minWidth:1050,
+    minHeight:700,
+    backgroundColor:'#111315',
+    webPreferences:{
+      preload:path.join(__dirname,'preload.js'),
+      contextIsolation:true,
+      nodeIntegration:false
+    }
+  });
+  bootstrapRenderer();
   mainWindow.loadFile(path.join(__dirname,'index.html'));
 }
 
@@ -58,5 +106,10 @@ ipcMain.handle('db:choose-folder', async () => {
 });
 ipcMain.handle('db:info', async () => ({folder:dbFolder, file:dbFile()}));
 
-app.whenReady().then(()=>{readConfig();setupOfflineAssets();createWindow();app.on('activate',()=>{if(BrowserWindow.getAllWindows().length===0)createWindow();});});
+app.whenReady().then(()=>{
+  readConfig();
+  setupOfflineAssets();
+  createWindow();
+  app.on('activate',()=>{if(BrowserWindow.getAllWindows().length===0)createWindow();});
+});
 app.on('window-all-closed',()=>{if(process.platform!=='darwin')app.quit();});
