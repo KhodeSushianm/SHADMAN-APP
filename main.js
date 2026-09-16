@@ -1,6 +1,7 @@
-const { app, BrowserWindow, dialog, ipcMain } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain, session } = require('electron');
 const fs = require('fs');
 const path = require('path');
+const { pathToFileURL } = require('url');
 
 let mainWindow;
 let dbFolder = null;
@@ -16,6 +17,20 @@ function readConfig(){
 function writeConfig(){
   fs.mkdirSync(app.getPath('userData'), {recursive:true});
   fs.writeFileSync(configFile(), JSON.stringify({dbFolder}, null, 2), 'utf8');
+}
+function setupOfflineAssets(){
+  session.defaultSession.webRequest.onBeforeRequest(
+    {urls:['https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.13.0/*','https://unpkg.com/lucide@latest*']},
+    (details, callback) => {
+      try {
+        const isSql = details.url.includes('/sql.js/1.13.0/');
+        const target = isSql
+          ? path.join(app.getAppPath(),'node_modules','sql.js','dist',details.url.endsWith('.wasm')?'sql-wasm.wasm':'sql-wasm.js')
+          : path.join(app.getAppPath(),'vendor','lucide-stub.js');
+        callback({redirectURL:pathToFileURL(target).href});
+      } catch { callback({}); }
+    }
+  );
 }
 function createWindow(){
   mainWindow = new BrowserWindow({width:1440,height:900,minWidth:1050,minHeight:700,backgroundColor:'#111315',webPreferences:{preload:path.join(__dirname,'preload.js'),contextIsolation:true,nodeIntegration:false}});
@@ -43,5 +58,5 @@ ipcMain.handle('db:choose-folder', async () => {
 });
 ipcMain.handle('db:info', async () => ({folder:dbFolder, file:dbFile()}));
 
-app.whenReady().then(()=>{readConfig();createWindow();app.on('activate',()=>{if(BrowserWindow.getAllWindows().length===0)createWindow();});});
+app.whenReady().then(()=>{readConfig();setupOfflineAssets();createWindow();app.on('activate',()=>{if(BrowserWindow.getAllWindows().length===0)createWindow();});});
 app.on('window-all-closed',()=>{if(process.platform!=='darwin')app.quit();});
