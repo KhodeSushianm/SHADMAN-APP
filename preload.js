@@ -2,13 +2,6 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 // UI-only polish is injected locally so the desktop app stays fully offline.
 const uiStyle = `
-@font-face {
-  font-family: 'Vazirmatn';
-  src: url('file://' + window.location.pathname.replace(/\\/g, '/').replace(/\\/index\\.html$/, '') + '/node_modules/@fontsource/vazirmatn/files/vazirmatn-latin-wght-normal.woff2') format('woff2');
-  font-weight: 100 900;
-  font-style: normal;
-  font-display: swap;
-}
 html, body, button, input, select, textarea {
   font-family: 'Vazirmatn', Tahoma, 'Segoe UI', sans-serif !important;
 }
@@ -61,6 +54,16 @@ body.light .plan-row:hover, body.light .exam-card:hover, body.light .note-card:h
 try {
   const injectUiStyle = () => {
     if (document.getElementById('shima-ui-polish')) return;
+
+    // Load the bundled Persian font through Fontsource's local CSS.
+    if (!document.getElementById('shima-vazirmatn')) {
+      const link = document.createElement('link');
+      link.id = 'shima-vazirmatn';
+      link.rel = 'stylesheet';
+      link.href = './node_modules/@fontsource/vazirmatn/400.css';
+      document.head.appendChild(link);
+    }
+
     const style = document.createElement('style');
     style.id = 'shima-ui-polish';
     style.textContent = uiStyle;
