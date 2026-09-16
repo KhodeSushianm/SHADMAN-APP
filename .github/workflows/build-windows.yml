@@ -2,32 +2,33 @@ name: Build Windows Installer
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   build-windows:
     runs-on: windows-latest
-
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-
+          cache: npm
       - name: Install dependencies
         run: npm install
-
-      - name: Build Windows Installer
-        run: npm run dist -- --publish never
-
-      - name: Upload Windows Installer
+      - name: Verify Electron
+        run: npx electron --version
+      - name: Build Windows installer
+        run: npm run dist
+      - name: Upload installer
         uses: actions/upload-artifact@v4
         with:
-          name: Shima-Academy-Windows-Installer
-          path: dist/*.exe
+          name: Shima-Academy-Windows-Installer-v2
+          path: dist/Shima-Academy-Setup-2.0.0.exe
           if-no-files-found: error
+          retention-days: 14
