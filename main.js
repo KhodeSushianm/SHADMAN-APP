@@ -1,115 +1,136 @@
-const { app, BrowserWindow, dialog, ipcMain, session } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain, shell } = require('electron');
 const fs = require('fs');
 const path = require('path');
-const { pathToFileURL } = require('url');
 
-let mainWindow;
+let mainWindow = null;
+let SQL = null;
+let db = null;
 let dbFolder = null;
-const configFile = () => path.join(app.getPath('userData'), 'config.json');
-const dbFile = () => dbFolder ? path.join(dbFolder, 'shima-academy.sqlite') : null;
+let dbPath = null;
+let ready = null;
 
-function readConfig(){
+const configPath = () => path.join(app.getPath('userData'), 'config.json');
+const defaultFolder = () => path.join(app.getPath('documents'), 'Shima Academy');
+
+function readConfig() {
   try {
-    const c = JSON.parse(fs.readFileSync(configFile(), 'utf8'));
-    if(c.dbFolder && fs.existsSync(c.dbFolder)) dbFolder = c.dbFolder;
-  } catch {}
-}
-function writeConfig(){
-  fs.mkdirSync(app.getPath('userData'), {recursive:true});
-  fs.writeFileSync(configFile(), JSON.stringify({dbFolder}, null, 2), 'utf8');
-}
-
-function setupOfflineAssets(){
-  session.defaultSession.webRequest.onBeforeRequest(
-    {urls:['https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.13.0/*','https://unpkg.com/lucide@latest*']},
-    (details, callback) => {
-      try {
-        const isSql = details.url.includes('/sql.js/1.13.0/');
-        const target = isSql
-          ? path.join(app.getAppPath(),'node_modules','sql.js','dist',details.url.endsWith('.wasm')?'sql-wasm.wasm':'sql-wasm.js')
-          : path.join(app.getAppPath(),'vendor','lucide-stub.js');
-        callback({redirectURL:pathToFileURL(target).href});
-      } catch { callback({}); }
-    }
-  );
+    const c = JSON.parse(fs.readFileSync(configPath(), 'utf8'));
+    if (c.dbFolder && fs.existsSync(c.dbFolder)) dbFolder = c.dbFolder;
+  } catch (_) {}
+  if (!dbFolder) dbFolder = defaultFolder();
+  fs.mkdirSync(dbFolder, { recursive: true });
+  dbPath = path.join(dbFolder, 'shima-academy.sqlite');
 }
 
-function bootstrapRenderer(){
-  if(!mainWindow) return;
-  const sqlAsm = path.join(app.getAppPath(),'node_modules','sql.js','dist','sql-asm.js');
-  const sqlAsmUrl = pathToFileURL(sqlAsm).href;
-
-  mainWindow.webContents.on('dom-ready', async () => {
-    try {
-      const code = `(async()=>{
-        try {
-          if(typeof window.initSqlJs !== 'function'){
-            await new Promise((resolve,reject)=>{
-              const s=document.createElement('script');
-              s.src=${JSON.stringify(sqlAsmUrl)};
-              s.onload=resolve;
-              s.onerror=()=>reject(new Error('LOCAL_SQL_JS_LOAD_FAILED'));
-              document.head.appendChild(s);
-            });
-          }
-          if(!window.lucide) window.lucide={createIcons:function(){}};
-          const content=document.getElementById('content');
-          if(content && !content.innerHTML.trim() && typeof window.init==='function') await window.init();
-        }catch(e){
-          console.error('[Shima Academy bootstrap]',e);
-          const content=document.getElementById('content');
-          if(content && !content.innerHTML.trim()) content.innerHTML='<div style="padding:40px;font-family:sans-serif;color:#c59898">خطا در راه‌اندازی برنامه. لطفاً برنامه را دوباره باز کنید.</div>';
-        }
-      })()`;
-      await mainWindow.webContents.executeJavaScript(code, true);
-    } catch (e) {
-      console.error('[Shima Academy executeJavaScript]', e);
-    }
-  });
+function writeConfig() {
+  fs.mkdirSync(path.dirname(configPath()), { recursive: true });
+  fs.writeFileSync(configPath(), JSON.stringify({ dbFolder }, null, 2), 'utf8');
 }
 
-function createWindow(){
+async function initDatabase() {
+  SQL = await require('sql.js')({
+    locateFile: file => path.join(process.resourcesPath, 'app.asar.unpacked', 'node_modules', 'sql.js', 'dist', file)
+  }).catch(async () => require('sql.js')({ locateFile: file => path.join(__dirname, 'node_modules', 'sql.js', 'dist', file) }));
+
+  const bytes = dbPath && fs.existsSync(dbPath) ? new Uint8Array(fs.readFileSync(dbPath)) : null;
+  db = bytes ? new SQL.Database(bytes) : new SQL.Database();
+  db.run('PRAGMA foreign_keys = ON;');
+  db.run(`
+    CREATE TABLE IF NOT EXISTS students (
+      id INTEGER PRIMARY KEY,
+      first_name TEXT NOT NULL DEFAULT '', last_name TEXT NOT NULL DEFAULT '', phone TEXT DEFAULT '',
+      grade TEXT DEFAULT '', field TEXT DEFAULT '', advisor TEXT DEFAULT '', status TEXT DEFAULT 'active',
+      score INTEGER DEFAULT 0, progress INTEGER DEFAULT 0, created_at TEXT NOT NULL DEFAULT ''
+    );
+    CREATE TABLE IF NOT EXISTS plans (
+      id INTEGER PRIMARY KEY, student_id INTEGER NOT NULL, date TEXT NOT NULL DEFAULT '', subject TEXT DEFAULT '',
+      title TEXT DEFAULT '', minutes INTEGER DEFAULT 0, status TEXT DEFAULT 'pending',
+      FOREIGN KEY(student_id) REFERENCES students(id) ON DELETE CASCADE
+    );
+    CREATE TABLE IF NOT EXISTS exams (
+      id INTEGER PRIMARY KEY, student_id INTEGER NOT NULL, title TEXT DEFAULT '', date TEXT DEFAULT '', score INTEGER DEFAULT 0,
+      FOREIGN KEY(student_id) REFERENCES students(id) ON DELETE CASCADE
+    );
+    CREATE TABLE IF NOT EXISTS notes (
+      id INTEGER PRIMARY KEY, student_id INTEGER NOT NULL, body TEXT DEFAULT '', date TEXT DEFAULT '',
+      FOREIGN KEY(student_id) REFERENCES students(id) ON DELETE CASCADE
+    );
+    CREATE TABLE IF NOT EXISTS app_settings (key TEXT PRIMARY KEY, value TEXT DEFAULT '');
+  `);
+  persist();
+}
+
+function persist() {
+  if (!db || !dbPath) return;
+  fs.writeFileSync(dbPath, Buffer.from(db.export()));
+}
+
+function resultRows(stmt) {
+  const rows = [];
+  while (stmt.step()) rows.push(stmt.getAsObject());
+  return rows;
+}
+function safeParams(params) { return Array.isArray(params) ? params : []; }
+
+function createWindow() {
   mainWindow = new BrowserWindow({
-    width:1440,
-    height:900,
-    minWidth:1050,
-    minHeight:700,
-    backgroundColor:'#111315',
-    webPreferences:{
-      preload:path.join(__dirname,'preload.js'),
-      contextIsolation:true,
-      nodeIntegration:false
-    }
+    width: 1500, height: 920, minWidth: 1050, minHeight: 700,
+    backgroundColor: '#111315', autoHideMenuBar: true,
+    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: false }
   });
-  bootstrapRenderer();
-  mainWindow.loadFile(path.join(__dirname,'index.html'));
+  mainWindow.loadFile(path.join(__dirname, 'index.html'));
+  mainWindow.webContents.on('did-fail-load', (_e, code, desc) => console.error('Renderer load failed:', code, desc));
 }
 
-ipcMain.handle('db:get', async () => {
-  if(!dbFile() || !fs.existsSync(dbFile())) return null;
-  try { return fs.readFileSync(dbFile()).toString('base64'); } catch { return null; }
+ipcMain.handle('app:ready', async () => { await ready; return { ok: true }; });
+ipcMain.handle('db:query', async (_event, sql, params) => {
+  await ready;
+  const stmt = db.prepare(String(sql));
+  try { stmt.bind(safeParams(params)); return resultRows(stmt); }
+  finally { try { stmt.free(); } catch (_) {} }
 });
-ipcMain.handle('db:save', async (_e, base64) => {
-  if(!dbFolder) return {ok:false, reason:'NO_FOLDER'};
-  fs.mkdirSync(dbFolder,{recursive:true});
-  fs.writeFileSync(dbFile(), Buffer.from(base64,'base64'));
-  return {ok:true, file:dbFile()};
+ipcMain.handle('db:run', async (_event, sql, params) => {
+  await ready;
+  const stmt = db.prepare(String(sql));
+  try { stmt.run(safeParams(params)); }
+  finally { try { stmt.free(); } catch (_) {} }
+  persist();
+  return { ok: true };
 });
+ipcMain.handle('db:transaction', async (_event, statements) => {
+  await ready;
+  db.run('BEGIN TRANSACTION');
+  try {
+    for (const item of (Array.isArray(statements) ? statements : [])) db.run(String(item.sql), safeParams(item.params));
+    db.run('COMMIT'); persist(); return { ok: true };
+  } catch (e) { try { db.run('ROLLBACK'); } catch (_) {} throw e; }
+});
+ipcMain.handle('db:info', async () => { await ready; return { folder: dbFolder, file: dbPath }; });
 ipcMain.handle('db:choose-folder', async () => {
-  const result = await dialog.showOpenDialog(mainWindow,{title:'انتخاب پوشه ذخیره‌سازی دیتابیس',properties:['openDirectory','createDirectory']});
-  if(result.canceled || !result.filePaths[0]) return {cancelled:true};
-  dbFolder = result.filePaths[0];
-  writeConfig();
-  let data=null;
-  if(fs.existsSync(dbFile())) { try { data=fs.readFileSync(dbFile()).toString('base64'); } catch {} }
-  return {cancelled:false, folder:dbFolder, data};
+  const r = await dialog.showOpenDialog(mainWindow, { title: 'انتخاب پوشه ذخیره‌سازی دیتابیس', properties: ['openDirectory', 'createDirectory'] });
+  if (r.canceled || !r.filePaths[0]) return { cancelled: true };
+  persist(); dbFolder = r.filePaths[0]; dbPath = path.join(dbFolder, 'shima-academy.sqlite'); writeConfig();
+  ready = initDatabase(); await ready;
+  return { cancelled: false, folder: dbFolder, file: dbPath };
 });
-ipcMain.handle('db:info', async () => ({folder:dbFolder, file:dbFile()}));
+ipcMain.handle('db:export', async () => {
+  await ready;
+  const r = await dialog.showSaveDialog(mainWindow, { title: 'خروجی دیتابیس', defaultPath: path.join(dbFolder, 'shima-academy-backup.sqlite'), filters: [{ name: 'SQLite Database', extensions: ['sqlite', 'db'] }] });
+  if (r.canceled || !r.filePath) return { cancelled: true };
+  fs.writeFileSync(r.filePath, Buffer.from(db.export())); return { cancelled: false, file: r.filePath };
+});
+ipcMain.handle('db:import', async () => {
+  await ready;
+  const r = await dialog.showOpenDialog(mainWindow, { title: 'بازیابی دیتابیس', properties: ['openFile'], filters: [{ name: 'SQLite Database', extensions: ['sqlite', 'db'] }] });
+  if (r.canceled || !r.filePaths[0]) return { cancelled: true };
+  const imported = new SQL.Database(new Uint8Array(fs.readFileSync(r.filePaths[0])));
+  imported.run('PRAGMA foreign_keys = ON;'); db = imported; persist();
+  return { cancelled: false, file: r.filePaths[0] };
+});
+ipcMain.handle('app:open-folder', async () => { await ready; await shell.openPath(dbFolder); return { ok: true }; });
 
-app.whenReady().then(()=>{
-  readConfig();
-  setupOfflineAssets();
-  createWindow();
-  app.on('activate',()=>{if(BrowserWindow.getAllWindows().length===0)createWindow();});
+app.whenReady().then(async () => {
+  readConfig(); ready = initDatabase(); await ready; createWindow();
+  app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 });
-app.on('window-all-closed',()=>{if(process.platform!=='darwin')app.quit();});
+app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
