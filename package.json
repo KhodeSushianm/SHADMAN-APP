@@ -28,6 +28,7 @@
       "main.js",
       "preload.js",
       "package.json",
+      "vendor/**/*",
       "node_modules/sql.js/**/*"
     ],
     "win": {
