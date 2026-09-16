@@ -1,6 +1,6 @@
 {
   "name": "shima-academy-panel",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "پنل مدیریتی آکادمی شیما شادمان با SQLite فایل‌محور",
   "main": "main.js",
   "author": "Shima Academy",
@@ -9,6 +9,9 @@
     "start": "electron .",
     "dev": "electron .",
     "dist": "electron-builder --win nsis"
+  },
+  "dependencies": {
+    "sql.js": "1.13.0"
   },
   "devDependencies": {
     "electron": "^38.0.0",
@@ -24,7 +27,8 @@
       "index.html",
       "main.js",
       "preload.js",
-      "package.json"
+      "package.json",
+      "node_modules/sql.js/**/*"
     ],
     "win": {
       "target": [
