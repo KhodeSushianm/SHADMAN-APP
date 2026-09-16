@@ -1,0 +1,8 @@
+{
+  "name": "shima-academy-panel",
+  "version": "1.1.0",
+  "description": "پنل مدیریتی آکادمی شیما شادمان با SQLite فایل‌محور",
+  "main": "main.js",
+  "scripts": {"start":"electron .","dev":"electron ."},
+  "devDependencies": {"electron":"^38.0.0"}
+}
