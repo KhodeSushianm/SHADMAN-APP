@@ -10,15 +10,21 @@
     "dev": "electron .",
     "dist": "electron-builder --win nsis --publish never"
   },
-  "dependencies": { "sql.js": "1.13.0" },
-  "devDependencies": { "electron": "^38.0.0", "electron-builder": "^26.0.0" },
+  "dependencies": {
+    "sql.js": "1.13.0",
+    "@fontsource/vazirmatn": "^5.2.6"
+  },
+  "devDependencies": {
+    "electron": "^38.0.0",
+    "electron-builder": "^26.0.0"
+  },
   "build": {
     "appId": "ir.shimaacademy.panel",
     "productName": "Shima Academy",
     "directories": { "output": "dist" },
     "asar": true,
     "asarUnpack": ["node_modules/sql.js/dist/*.wasm"],
-    "files": ["index.html", "main.js", "preload.js", "package.json", "node_modules/sql.js/**/*"],
+    "files": ["index.html", "main.js", "preload.js", "package.json", "node_modules/sql.js/**/*", "node_modules/@fontsource/vazirmatn/**/*"],
     "win": { "target": [{ "target": "nsis", "arch": ["x64"] }], "artifactName": "Shima-Academy-Setup-${version}.${ext}" },
     "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true, "createDesktopShortcut": true, "createStartMenuShortcut": true, "shortcutName": "Shima Academy" }
   }
