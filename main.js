@@ -110,7 +110,10 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1500, height: 920, minWidth: 1050, minHeight: 700,
     backgroundColor: '#111315', autoHideMenuBar: true,
-    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: false }
+    webPreferences: {
+      preload: path.join(__dirname, authenticated ? 'preload.js' : 'login-preload.js'),
+      contextIsolation: true, nodeIntegration: false, sandbox: false
+    }
   });
   mainWindow.loadFile(path.join(__dirname, authenticated ? 'index.html' : 'login.html'));
   mainWindow.webContents.on('did-finish-load', () => { if (authenticated) applyBranding(); });
@@ -121,7 +124,11 @@ ipcMain.handle('auth:login', async (_event, username, password) => {
   const valid = String(username || '') === AUTH_USERNAME && verifyPassword(password);
   if (!valid) return { ok: false };
   authenticated = true;
-  if (mainWindow && !mainWindow.isDestroyed()) await mainWindow.loadFile(path.join(__dirname, 'index.html'));
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.close();
+    mainWindow = null;
+  }
+  createWindow();
   return { ok: true };
 });
 ipcMain.handle('auth:status', () => ({ authenticated }));
