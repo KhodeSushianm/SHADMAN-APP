@@ -18,7 +18,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Install dependencies
         run: npm install
@@ -29,10 +29,20 @@ jobs:
       - name: Build Windows installer
         run: npm run dist
 
+      - name: Verify installer output
+        shell: pwsh
+        run: |
+          $installer = Get-ChildItem -Path dist -Filter 'Shadman-Academy-Setup-*.exe' | Select-Object -First 1
+          if (-not $installer) {
+            Write-Error 'Shadman Academy installer was not created.'
+          }
+          Write-Host "Installer created: $($installer.FullName)"
+          Write-Host "Size: $($installer.Length) bytes"
+
       - name: Upload installer
         uses: actions/upload-artifact@v4
         with:
-          name: Shima-Academy-Windows-Installer-v2.0.1
-          path: dist/Shima-Academy-Setup-*.exe
+          name: Shadman-Academy-Windows-Installer-v2.0.2
+          path: dist/Shadman-Academy-Setup-*.exe
           if-no-files-found: error
           retention-days: 14
