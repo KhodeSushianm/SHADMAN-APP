@@ -1,6 +1,6 @@
 {
   "name": "shima-academy-panel",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "description": "Shadman Academy — پنل مدیریت مشاوره کنکور با SQLite محلی و کاملاً آفلاین",
   "main": "main.js",
   "author": "Shadman Academy",
