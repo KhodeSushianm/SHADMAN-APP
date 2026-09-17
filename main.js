@@ -1,4 +1,5 @@
 const { app, BrowserWindow, dialog, ipcMain, shell } = require('electron');
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
@@ -8,9 +9,23 @@ let db = null;
 let dbFolder = null;
 let dbPath = null;
 let ready = null;
+let authenticated = false;
 
 const configPath = () => path.join(app.getPath('userData'), 'config.json');
 const defaultFolder = () => path.join(app.getPath('documents'), 'Shadman Academy');
+
+// Local consultant credentials. The password is stored only as a salted scrypt hash.
+const AUTH_USERNAME = 'admin';
+const AUTH_SALT = 'c216d2f753f4eb946f7efb9f6941187d';
+const AUTH_PASSWORD_HASH = 'd668e336e9e8306ff6379f29d1629414315cac13492a2caf8c32d4653b60ddca006c7b31bb02c417816101ea44cb4715831324b50265e3d0f44641201910cead';
+
+function verifyPassword(password) {
+  if (typeof password !== 'string') return false;
+  const candidate = crypto.scryptSync(password, AUTH_SALT, 64).toString('hex');
+  const a = Buffer.from(candidate, 'hex');
+  const b = Buffer.from(AUTH_PASSWORD_HASH, 'hex');
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
 
 function readConfig() {
   try {
@@ -97,19 +112,29 @@ function createWindow() {
     backgroundColor: '#111315', autoHideMenuBar: true,
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: false }
   });
-  mainWindow.loadFile(path.join(__dirname, 'index.html'));
-  mainWindow.webContents.on('did-finish-load', applyBranding);
+  mainWindow.loadFile(path.join(__dirname, authenticated ? 'index.html' : 'login.html'));
+  mainWindow.webContents.on('did-finish-load', () => { if (authenticated) applyBranding(); });
   mainWindow.webContents.on('did-fail-load', (_e, code, desc) => console.error('Renderer load failed:', code, desc));
 }
 
+ipcMain.handle('auth:login', async (_event, username, password) => {
+  const valid = String(username || '') === AUTH_USERNAME && verifyPassword(password);
+  if (!valid) return { ok: false };
+  authenticated = true;
+  if (mainWindow && !mainWindow.isDestroyed()) await mainWindow.loadFile(path.join(__dirname, 'index.html'));
+  return { ok: true };
+});
+ipcMain.handle('auth:status', () => ({ authenticated }));
 ipcMain.handle('app:ready', async () => { await ready; return { ok: true }; });
 ipcMain.handle('db:query', async (_event, sql, params) => {
+  if (!authenticated) throw new Error('Unauthorized');
   await ready;
   const stmt = db.prepare(String(sql));
   try { stmt.bind(safeParams(params)); return resultRows(stmt); }
   finally { try { stmt.free(); } catch (_) {} }
 });
 ipcMain.handle('db:run', async (_event, sql, params) => {
+  if (!authenticated) throw new Error('Unauthorized');
   await ready;
   const stmt = db.prepare(String(sql));
   try { stmt.run(safeParams(params)); }
@@ -118,6 +143,7 @@ ipcMain.handle('db:run', async (_event, sql, params) => {
   return { ok: true };
 });
 ipcMain.handle('db:transaction', async (_event, statements) => {
+  if (!authenticated) throw new Error('Unauthorized');
   await ready;
   db.run('BEGIN TRANSACTION');
   try {
@@ -125,8 +151,9 @@ ipcMain.handle('db:transaction', async (_event, statements) => {
     db.run('COMMIT'); persist(); return { ok: true };
   } catch (e) { try { db.run('ROLLBACK'); } catch (_) {} throw e; }
 });
-ipcMain.handle('db:info', async () => { await ready; return { folder: dbFolder, file: dbPath }; });
+ipcMain.handle('db:info', async () => { if (!authenticated) throw new Error('Unauthorized'); await ready; return { folder: dbFolder, file: dbPath }; });
 ipcMain.handle('db:choose-folder', async () => {
+  if (!authenticated) throw new Error('Unauthorized');
   const r = await dialog.showOpenDialog(mainWindow, { title: 'انتخاب پوشه ذخیره‌سازی دیتابیس', properties: ['openDirectory', 'createDirectory'] });
   if (r.canceled || !r.filePaths[0]) return { cancelled: true };
   persist(); dbFolder = r.filePaths[0]; dbPath = path.join(dbFolder, 'shima-academy.sqlite'); writeConfig();
@@ -134,12 +161,14 @@ ipcMain.handle('db:choose-folder', async () => {
   return { cancelled: false, folder: dbFolder, file: dbPath };
 });
 ipcMain.handle('db:export', async () => {
+  if (!authenticated) throw new Error('Unauthorized');
   await ready;
   const r = await dialog.showSaveDialog(mainWindow, { title: 'خروجی دیتابیس', defaultPath: path.join(dbFolder, 'shima-academy-backup.sqlite'), filters: [{ name: 'SQLite Database', extensions: ['sqlite', 'db'] }] });
   if (r.canceled || !r.filePath) return { cancelled: true };
   fs.writeFileSync(r.filePath, Buffer.from(db.export())); return { cancelled: false, file: r.filePath };
 });
 ipcMain.handle('db:import', async () => {
+  if (!authenticated) throw new Error('Unauthorized');
   await ready;
   const r = await dialog.showOpenDialog(mainWindow, { title: 'بازیابی دیتابیس', properties: ['openFile'], filters: [{ name: 'SQLite Database', extensions: ['sqlite', 'db'] }] });
   if (r.canceled || !r.filePaths[0]) return { cancelled: true };
@@ -147,7 +176,7 @@ ipcMain.handle('db:import', async () => {
   imported.run('PRAGMA foreign_keys = ON;'); db = imported; persist();
   return { cancelled: false, file: r.filePaths[0] };
 });
-ipcMain.handle('app:open-folder', async () => { await ready; await shell.openPath(dbFolder); return { ok: true }; });
+ipcMain.handle('app:open-folder', async () => { if (!authenticated) throw new Error('Unauthorized'); await ready; await shell.openPath(dbFolder); return { ok: true }; });
 
 app.whenReady().then(async () => {
   readConfig(); ready = initDatabase(); await ready; createWindow();
