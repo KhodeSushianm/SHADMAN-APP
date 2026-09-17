@@ -1,6 +1,6 @@
 {
   "name": "shima-academy-panel",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "Shadman Academy — پنل مدیریت مشاوره کنکور با SQLite محلی و کاملاً آفلاین",
   "main": "main.js",
   "author": "Shadman Academy",
@@ -24,7 +24,7 @@
     "directories": { "output": "dist" },
     "asar": true,
     "asarUnpack": ["node_modules/sql.js/dist/*.wasm"],
-    "files": ["index.html", "main.js", "preload.js", "package.json", "assets/**/*", "node_modules/sql.js/**/*", "node_modules/@fontsource/vazirmatn/**/*"],
+    "files": ["index.html", "main.js", "preload.js", "login.html", "login-preload.js", "package.json", "assets/**/*", "node_modules/sql.js/**/*", "node_modules/@fontsource/vazirmatn/**/*"],
     "win": { "target": [{ "target": "nsis", "arch": ["x64"] }], "artifactName": "Shadman-Academy-Setup-${version}.${ext}" },
     "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true, "createDesktopShortcut": true, "createStartMenuShortcut": true, "shortcutName": "Shadman Academy" }
   }
