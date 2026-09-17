@@ -32,7 +32,7 @@ jobs:
       - name: Upload installer
         uses: actions/upload-artifact@v4
         with:
-          name: Shima-Academy-Windows-Installer-v2
-          path: dist/Shima-Academy-Setup-2.0.0.exe
+          name: Shima-Academy-Windows-Installer-v2.0.1
+          path: dist/Shima-Academy-Setup-*.exe
           if-no-files-found: error
           retention-days: 14
