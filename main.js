@@ -17,7 +17,8 @@ const defaultFolder = () => path.join(app.getPath('documents'), 'Shadman Academy
 // Local consultant credentials. The password is stored only as a salted scrypt hash.
 const AUTH_USERNAME = 'admin';
 const AUTH_SALT = 'c216d2f753f4eb946f7efb9f6941187d';
-const AUTH_PASSWORD_HASH = 'd668e336e9e8306ff6379f29d1629414315cac13492a2caf8c32d4653b60ddca006c7b31bb02c417816101ea44cb4715831324b50265e3d0f44641201910cead';
+// Initial password: 123456
+const AUTH_PASSWORD_HASH = '889c43ad30ec2cd1743fae8d83c3b0d07e8b578734a626e28eddb4175ad997602491bd2531eda09e4ec52a2212f448e17fe56c4ef538cbbf7f366b788c67379a';
 
 function verifyPassword(password) {
   if (typeof password !== 'string') return false;
