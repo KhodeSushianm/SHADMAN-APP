@@ -42,7 +42,7 @@ jobs:
       - name: Upload installer
         uses: actions/upload-artifact@v4
         with:
-          name: Shadman-Academy-Windows-Installer-v2.0.3
+          name: Shadman-Academy-Windows-Installer-v2.0.4
           path: dist/Shadman-Academy-Setup-*.exe
           if-no-files-found: error
           retention-days: 14
