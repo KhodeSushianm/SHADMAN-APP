@@ -10,7 +10,7 @@ let dbPath = null;
 let ready = null;
 
 const configPath = () => path.join(app.getPath('userData'), 'config.json');
-const defaultFolder = () => path.join(app.getPath('documents'), 'Shima Academy');
+const defaultFolder = () => path.join(app.getPath('documents'), 'Shadman Academy');
 
 function readConfig() {
   try {
@@ -72,6 +72,25 @@ function resultRows(stmt) {
 }
 function safeParams(params) { return Array.isArray(params) ? params : []; }
 
+function applyBranding() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  mainWindow.webContents.executeJavaScript(`(() => {
+    document.title = 'Shadman Academy — پنل مدیریت';
+    const name = document.querySelector('.brand-name');
+    if (name) name.textContent = 'Shadman Academy';
+    const sub = document.querySelector('.brand-sub');
+    if (sub) sub.textContent = 'پنل مدیریت';
+    const mark = document.querySelector('.brandmark');
+    if (mark) {
+      mark.innerHTML = '<img src="assets/shadman-academy-logo.svg" alt="Shadman Academy" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block">';
+      mark.style.background = 'transparent';
+      mark.style.overflow = 'hidden';
+      mark.style.padding = '0';
+    }
+    document.querySelectorAll('img[data-brand-logo]').forEach(img => { img.src = 'assets/shadman-academy-logo.svg'; });
+  })()`).catch(() => {});
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1500, height: 920, minWidth: 1050, minHeight: 700,
@@ -79,6 +98,7 @@ function createWindow() {
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: false }
   });
   mainWindow.loadFile(path.join(__dirname, 'index.html'));
+  mainWindow.webContents.on('did-finish-load', applyBranding);
   mainWindow.webContents.on('did-fail-load', (_e, code, desc) => console.error('Renderer load failed:', code, desc));
 }
 
